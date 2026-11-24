@@ -1,0 +1,14 @@
+# Your own documents and results never go to git
+1_standard/*
+2_to_check/*
+output/*
+!1_standard/.gitkeep
+!2_to_check/.gitkeep
+!output/.gitkeep
+/*.pdf
+
+# Python / OS
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
