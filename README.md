@@ -72,10 +72,35 @@ All of these tests were run during development; the errors were planted by me.
 | Test | Result |
 |---|---|
 | Synthetic factsheet: 6 planted text errors + 1 recoloured graphic | 7/7 found, 0 false alarms |
-| Real public fund factsheet (6 pages, unreadable font encoding) vs itself | 0 differences |
+| Real public fund factsheet (6 pages, unreadable font encoding) vs itself | 0 differences on all 6 pages |
 | Same factsheet with 8 planted edits (date, 2 figures, a name, a chart bar, a deleted disclaimer, 2 added lines) | 8/8 found and labelled, 0 false alarms |
 
-The real factsheet isn't included in this repo because it belongs to its publisher. `make_sample_pdfs.py` builds a fully fictional equivalent.
+### Real-factsheet test (outputs in this repo)
+
+- **Standard:** a public fund factsheet, the *Capital Group American Balanced Fund (LUX)*, in [`1_standard/`](1_standard/).
+- **Checked copy:** that factsheet with 8 planted edits. The copy itself isn't published, because it carries false figures under a real company's branding.
+- **Outputs:** in [`examples/real_factsheet_test/`](examples/real_factsheet_test/):
+  - [`discrepancies.xlsx`](examples/real_factsheet_test/discrepancies.xlsx): 8 rows with before/after crops
+  - [highlighted PDF](examples/real_factsheet_test/): report pages followed by the marked-up factsheet
+
+  Every factsheet page in the highlighted PDF is watermarked **"TEST COPY - PLANTED ERRORS - NOT A REAL FACTSHEET"**, so it can't be mistaken for the publisher's document.
+
+| # | Planted edit | Reported as |
+|---|---|---|
+| 1 | Date 31 October 2026 → 2025 | Content changed |
+| 2 | Fund size US$ 2,353m → 3,253m | Content changed |
+| 3 | Manager A.Wilson → A.Watson | Content changed |
+| 4 | Index 2025 return 13.4 → 31.4 | Content changed |
+| 5 | 3-year fund bar recoloured | Content changed |
+| 6 | "Past results are not a guarantee…" removed | Missing content |
+| 7 | "Returns are guaranteed every year." added | Added content |
+| 8 | "TEST COPY" label added | Added content |
+
+This factsheet's fonts extract as scrambled text, so the tool compared rendered pages. The report shows image crops rather than quoted text.
+
+To reproduce with your own edited copy: `python proofread_compare.py --watermark "TEST COPY"` (put the copy in `2_to_check/`).
+
+`make_sample_pdfs.py` builds a fully fictional standard and edited pair that anyone can regenerate.
 
 ## Limitations
 

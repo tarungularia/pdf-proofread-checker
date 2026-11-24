@@ -495,9 +495,23 @@ def report_pages(items: list[Discrepancy], log: list[dict], standard: Path, chec
     return _to_pdf_pages((plt, figs))
 
 
+def watermark_overlay(width: float, height: float, text: str) -> PdfReader:
+    """Transparent page with a large diagonal watermark, so a marked-up copy can't pass as the original."""
+    plt, fig, ax = _figure(width, height)
+    ax.text(width / 2, height / 2, text, fontsize=min(width, height) / max(14, len(text) * 0.62),
+            color="#d62828", alpha=0.28, rotation=55, ha="center", va="center", weight="bold",
+            family="DejaVu Sans")
+    ax.text(width / 2, 14, text, fontsize=7, color="#d62828", ha="center", va="center",
+            weight="bold", family="DejaVu Sans")
+    return _to_pdf_pages((plt, [fig]))
+
+
 def write_highlighted_pdf(items: list[Discrepancy], log: list[dict], standard: Path, check: Path,
-                          path: Path) -> None:
-    """Copy the checked PDF, highlight and number each discrepancy, and add report pages at the front."""
+                          path: Path, watermark: str | None = None) -> None:
+    """Copy the checked PDF, highlight and number each discrepancy, and add report pages at the front.
+
+    If `watermark` is given, it is stamped diagonally across every page of the checked document.
+    """
     reader = PdfReader(check)
     writer = PdfWriter(clone_from=reader)
     tags_by_page: dict[int, list] = {}
@@ -524,6 +538,11 @@ def write_highlighted_pdf(items: list[Discrepancy], log: list[dict], standard: P
         overlay = tag_overlay(float(page.mediabox.width), float(page.mediabox.height), tags).pages[0]
         page.merge_translated_page(overlay, float(page.mediabox.left), float(page.mediabox.bottom))
 
+    if watermark:
+        for page in writer.pages:
+            mark = watermark_overlay(float(page.mediabox.width), float(page.mediabox.height), watermark).pages[0]
+            page.merge_translated_page(mark, float(page.mediabox.left), float(page.mediabox.bottom))
+
     first = writer.pages[0]
     report = report_pages(items, log, standard, check, float(first.mediabox.width), float(first.mediabox.height))
     for i, rpage in enumerate(report.pages):
@@ -544,6 +563,8 @@ def main() -> int:
     parser.add_argument("--standard", type=Path, default=None)
     parser.add_argument("--check", type=Path, default=None)
     parser.add_argument("--out", type=Path, default=HERE / "output")
+    parser.add_argument("--watermark", default=None,
+                        help='stamp this text across every page of the checked document, e.g. "TEST COPY"')
     args = parser.parse_args()
 
     standard = args.standard or first_pdf(HERE / "1_standard")
@@ -557,7 +578,7 @@ def main() -> int:
     xlsx = args.out / "discrepancies.xlsx"
     pdf = args.out / f"{check.stem}_highlighted.pdf"
     write_excel(items, log, standard, check, xlsx)
-    write_highlighted_pdf(items, log, standard, check, pdf)
+    write_highlighted_pdf(items, log, standard, check, pdf, args.watermark)
 
     print(f"Standard: {standard.name}\nChecked:  {check.name}")
     for entry in log:
